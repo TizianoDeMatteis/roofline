@@ -70,8 +70,9 @@ def process(hw_platforms, apps, xkcd):
     assert isinstance(apps, list)
     assert isinstance(xkcd, bool)
 
-    fontsize_title = 16
-    fontsize_axis = 14
+    fontsize_title = 20
+    fontsize_axis = 16
+    fontsize_labels = 14
 
     # arithmetic intensity
     arithmetic_intensity = numpy.logspace(START, STOP, num=N, base=2)
@@ -155,7 +156,7 @@ def process(hw_platforms, apps, xkcd):
         
         axis.annotate(val[0] + ": " + str(bandwidth) + " GB/s", pos,
             rotation=np.arctan(m/fig_ratio)*180/np.pi, rotation_mode='anchor',
-            fontsize=11,
+            fontsize=fontsize_labels,
             ha="left", va='bottom',
             color=memory_bound_line[0].get_color())
          
@@ -173,42 +174,11 @@ def process(hw_platforms, apps, xkcd):
             xmax/(10**(xlogsize*0.01)), roof*(10**(ylogsize*0.01)),
             val[0] + ": " + str(roof) + " GFLOPs",
             ha="right",
-            fontsize=11,
+            fontsize=fontsize_labels,
             color=memory_bound_line[0].get_color())
 
 
 
-
-    # # plot roofs
-    # for idx, val in enumerate(hw_platforms):
-    #     roof = float(val[1])
-    #     bandwidth = float(val[2])
-
-    #     x = [bandwidth, xmax*10]
-    #     print("plot line", x, [roof for xx in x])
-    #     axis.loglog(x, [roof for xx in x], linewidth=1.0,
-    #         linestyle='-.',
-    #         marker="2",
-    #         color="grey",
-    #         zorder=10)
-
-    #     # Label
-    #     axis.text(
-    #         #roof["val"]/max_slope*10,roof["val"]*1.1,
-    #         xmax/(10**(xlogsize*0.01)), roof*(10**(ylogsize*0.01)),
-    #         val[0] + ": " + str(roof) + " GFLOPs",
-    #         ha="right",
-    #         fontsize=11,
-    #         color="grey")
-
-
-    
-
-    # for idx, val in enumerate(hw_platforms):
-    #     axis.plot(arithmetic_intensity, achv_perf[idx, 0:],
-    #                  label=val[0])
-    #     # axes[1].plot(arithmetic_intensity, norm_achv_perf[idx, 0:],
-    #                 #  label=val[0])
 
     if apps != []:
         color = matplotlib.pyplot.cm.rainbow(numpy.linspace(0, 1, len(apps)))
@@ -227,7 +197,7 @@ def process(hw_platforms, apps, xkcd):
     # Set aspect
     axis.set_xlim([xmin, xmax])
     axis.set_ylim([ymin, ymax])
-    axis.legend()
+    axis.legend(fontsize=fontsize_labels)
     fig.tight_layout()
     set_size(fig_dimension*fig_ratio,fig_dimension, ax=axis)
     matplotlib.pyplot.savefig("roofline.png")
