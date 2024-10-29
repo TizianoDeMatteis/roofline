@@ -1,2 +1,2 @@
 # name, intensity, [implementation name, performance (gflops/s)]...
-matrix add/sub,0.125
+MMM, 0.25

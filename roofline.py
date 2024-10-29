@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 
 """
-This is a simple script to compute the Roofline Model
-(https://en.wikipedia.org/wiki/Roofline_model) of given HW platforms
-running given apps
 
-Peak performance must be specified in GFLOP/s
-Peak bandwidth must be specified in GB/s
-Arithemtic intensity is specified in FLOP/byte
-Performance is specified in GFLOP/s
-
-Copyright 2018-2024, Mohamed A. Bamakhrama
-Licensed under BSD license shown in LICENSE
+This is based on:
+- https://github.com/mohamed/roofline, Copyright 2018-2024, Mohamed A. Bamakhrama Licensed under BSD license shown in LICENSE
+- https://github.com/giopaglia/rooflini/tree/master, Copyright Giopaglia
 """
 
 
@@ -77,6 +70,9 @@ def process(hw_platforms, apps, xkcd):
     assert isinstance(apps, list)
     assert isinstance(xkcd, bool)
 
+    fontsize_title = 16
+    fontsize_axis = 14
+
     # arithmetic intensity
     arithmetic_intensity = numpy.logspace(START, STOP, num=N, base=2)
 
@@ -91,6 +87,10 @@ def process(hw_platforms, apps, xkcd):
                               numpy.array([(float(p[2])*1e3) / float(p[3])
                                            for p in hw_platforms]),
                               arithmetic_intensity)
+    # HW_platform is a list of tuples. Each tuple contains ('Name', 'Peak perf', 'Mem BW', ...)
+    platform_names = [x[0] for x in hw_platforms]
+    peak_performance = [float(x[1]) for x in hw_platforms]
+    peak_bandwidth = [float(x[2]) for x in hw_platforms]
 
     # Apps
     if apps != []:
@@ -102,8 +102,10 @@ def process(hw_platforms, apps, xkcd):
     fig, axis = matplotlib.pyplot.subplots(1, 1)
     axis.set_xscale('log', base=2)
     axis.set_yscale('log', base=2)
-    axis.set_xlabel('Arithmetic Intensity (FLOP/byte)', fontsize=12)
+    axis.set_xlabel('Arithmetic Intensity (FLOP/byte)', fontsize=fontsize_axis)
     axis.grid(True, which='major')
+    axis.grid(color="#dddddd", zorder=-1)
+
 
     fig_ratio = 2
     fig_dimension = 7
@@ -111,68 +113,69 @@ def process(hw_platforms, apps, xkcd):
     matplotlib.pyplot.setp(axis, xticks=arithmetic_intensity,
                            yticks=numpy.logspace(-5, 20, num=26, base=2))
 
-    axis.set_ylabel("Achieveable Performance (GFLOP/s)", fontsize=12)
+    axis.set_ylabel("Achieveable Performance (GFLOP/s)", fontsize=fontsize_axis)
     # axes[1].set_ylabel("Normalized Achieveable Performance (MFLOP/s/$)",
                     #    fontsize=12)
 
-    axis.set_title('Roofline Model', fontsize=14)
-    # axes[1].set_title('Normalized Roofline Model', fontsize=14)
+    axis.set_title('Roofline Model', fontsize=fontsize_title)
 
     # plot slopes (inspired by https://github.com/giopaglia/rooflini/)
     # Axis limits
-    xmin, xmax, ymin, ymax = 0.04, 600, 0.4, 7000
+    xmin, xmax, ymin, ymax = 0.001, 1500, 1, max(peak_performance)*1.5 # scale it to fit the data
     xlogsize = float(np.log10(xmax/xmin))
     ylogsize = float(np.log10(ymax/ymin))
     m = xlogsize/ylogsize
-    max_bandwidth=0
+   
+
     for idx, val in enumerate(hw_platforms):
         # val = [name, performance, bandwidth, cost in $]
-        roof = float(val[1])
+        roof = float(val[1]) # performance peak
         bandwidth = float(val[2])
         print("Roof: ", roof, ", bw: ", bandwidth)
         y = [0, roof]
         x = [float(yy)/bandwidth for yy in y]
         print(x,y)
         # plot line connecting x[0], y[0], to x[1]y[1]
-        axis.loglog(x, y, linewidth=2.0,
+        memory_bound_line = axis.loglog(x, y, linewidth=2.0,
             linestyle='-.',
             marker="2",
             zorder=10, label=val[0]) # use label to assign it to the legend
         
         
-        # xpos = xmin*(10**(xlogsize*0.04))
-        # ypos = xpos*bandwidth
-        # if ypos<ymin:
-        #     ypos = ymin*(10**(ylogsize*0.02))
-        #     xpos = ypos/bandwidth
-        # pos = (xpos, ypos)
+        xpos = xmin*(10**(xlogsize*0.04))
+        ypos = xpos*bandwidth
+        if ypos<ymin:
+            ypos = ymin*(10**(ylogsize*0.02))
+            xpos = ypos/bandwidth
+        pos = (xpos, ypos)
 
-        # # In case of linear plotting you might need something like this: trans_angle = np.arctan(bandwidth*m)*180/np.pi
-        # #trans_angle = 45*m
-        # # print("\t" + str(trans_angle) + "°")
+        # In case of linear plotting you might need something like this: trans_angle = np.arctan(slope["val"]*m)*180/np.pi
+        #trans_angle = 45*m
+        # print("\t" + str(trans_angle) + "°")
         
-        # # THE ROTATION IS WRONG
-        # axis.annotate(val[0] + ": " + str(bandwidth) + " GB/s", pos,   
-        #     rotation=np.arctan(m/fig_ratio)*180/np.pi, rotation_mode='anchor',
-        #     fontsize=11,
-        #     ha="left", va='bottom',
-        #     color="grey")
-        #  # In the meantime: find maximum slope
-        # if bandwidth > max_bandwidth:
-        #     max_bandwidth = bandwidth
+        axis.annotate(val[0] + ": " + str(bandwidth) + " GB/s", pos,
+            rotation=np.arctan(m/fig_ratio)*180/np.pi, rotation_mode='anchor',
+            fontsize=11,
+            ha="left", va='bottom',
+            color=memory_bound_line[0].get_color())
+         
 
         # plot the roof
-        #NON CAPISCO PERCHE' non funzioni, le coordinate NON SONO, specie roofstart sono giuste ma questo va a caso
-        xxx = [bandwidth, xmax*10]
-
-        roof_start = y
-
+        # Note that given x=(x0,x1) and y =(y0,y1), loglog plots a line between point (x0,y0) and (x1, y1)
         roof_xs = [x[1], xmax*10]
         roof_ys = [roof, roof]
-        axis.loglog(roof_xs, roof_ys, linewidth=2.0,
+        compute_bound_line = axis.loglog(roof_xs, roof_ys, linewidth=2.0,
             linestyle='-.',
             marker="2",
-            zorder=10)
+            zorder=10, color=memory_bound_line[0].get_color())
+        
+        axis.text(
+            xmax/(10**(xlogsize*0.01)), roof*(10**(ylogsize*0.01)),
+            val[0] + ": " + str(roof) + " GFLOPs",
+            ha="right",
+            fontsize=11,
+            color=memory_bound_line[0].get_color())
+
 
 
 
@@ -201,18 +204,18 @@ def process(hw_platforms, apps, xkcd):
 
     
 
-    for idx, val in enumerate(hw_platforms):
-        axis.plot(arithmetic_intensity, achv_perf[idx, 0:],
-                     label=val[0])
-        # axes[1].plot(arithmetic_intensity, norm_achv_perf[idx, 0:],
-                    #  label=val[0])
+    # for idx, val in enumerate(hw_platforms):
+    #     axis.plot(arithmetic_intensity, achv_perf[idx, 0:],
+    #                  label=val[0])
+    #     # axes[1].plot(arithmetic_intensity, norm_achv_perf[idx, 0:],
+    #                 #  label=val[0])
 
     if apps != []:
         color = matplotlib.pyplot.cm.rainbow(numpy.linspace(0, 1, len(apps)))
         for idx, val in enumerate(apps):
            
             axis.axvline(apps_intensity[idx], label=val[0],
-                            linestyle=':', color=color[idx])
+                            linestyle=':', color=color[idx], linewidth=2.0)
             if len(val) > 2:
                 assert len(val) % 2 == 0
                 for cnt in range(2, len(val), 2):
@@ -222,12 +225,12 @@ def process(hw_platforms, apps, xkcd):
                                     textcoords='data')
 
     # Set aspect
-    # axis.set_xlim(xmin, xmax)
-    # axis.set_ylim(ymin, ymax)
-
+    axis.set_xlim([xmin, xmax])
+    axis.set_ylim([ymin, ymax])
     axis.legend()
     fig.tight_layout()
     set_size(fig_dimension*fig_ratio,fig_dimension, ax=axis)
+    matplotlib.pyplot.savefig("roofline.png")
     matplotlib.pyplot.show()
 
 
