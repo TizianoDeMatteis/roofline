@@ -71,8 +71,8 @@ def process(hw_platforms, apps, xkcd):
     assert isinstance(xkcd, bool)
 
     fontsize_title = 20
-    fontsize_axis = 16
-    fontsize_labels = 14
+    fontsize_axis = 18
+    fontsize_labels = 18
 
     # arithmetic intensity
     arithmetic_intensity = numpy.logspace(START, STOP, num=N, base=2)
@@ -103,7 +103,7 @@ def process(hw_platforms, apps, xkcd):
     fig, axis = matplotlib.pyplot.subplots(1, 1)
     axis.set_xscale('log', base=2)
     axis.set_yscale('log', base=2)
-    axis.set_xlabel('Arithmetic Intensity (FLOP/byte)', fontsize=fontsize_axis)
+    axis.set_xlabel('Arithmetic Intensity (FLOPs/byte)', fontsize=fontsize_axis)
     axis.grid(True, which='major')
     axis.grid(color="#dddddd", zorder=-1)
 
@@ -114,7 +114,7 @@ def process(hw_platforms, apps, xkcd):
     matplotlib.pyplot.setp(axis, xticks=arithmetic_intensity,
                            yticks=numpy.logspace(-5, 20, num=26, base=2))
 
-    axis.set_ylabel("Achieveable Performance (GFLOP/s)", fontsize=fontsize_axis)
+    axis.set_ylabel("Achieveable Performance (GFLOPs/s)", fontsize=fontsize_axis)
     # axes[1].set_ylabel("Normalized Achieveable Performance (MFLOP/s/$)",
                     #    fontsize=12)
 
@@ -137,7 +137,7 @@ def process(hw_platforms, apps, xkcd):
         x = [float(yy)/bandwidth for yy in y]
         print(x,y)
         # plot line connecting x[0], y[0], to x[1]y[1]
-        memory_bound_line = axis.loglog(x, y, linewidth=2.0,
+        memory_bound_line = axis.loglog(x, y, linewidth=4.0,
             linestyle='-.',
             marker="2",
             zorder=10, label=val[0]) # use label to assign it to the legend
@@ -165,7 +165,7 @@ def process(hw_platforms, apps, xkcd):
         # Note that given x=(x0,x1) and y =(y0,y1), loglog plots a line between point (x0,y0) and (x1, y1)
         roof_xs = [x[1], xmax*10]
         roof_ys = [roof, roof]
-        compute_bound_line = axis.loglog(roof_xs, roof_ys, linewidth=2.0,
+        compute_bound_line = axis.loglog(roof_xs, roof_ys, linewidth=4.0,
             linestyle='-.',
             marker="2",
             zorder=10, color=memory_bound_line[0].get_color())
@@ -185,7 +185,7 @@ def process(hw_platforms, apps, xkcd):
         for idx, val in enumerate(apps):
            
             axis.axvline(apps_intensity[idx], label=val[0],
-                            linestyle=':', color=color[idx], linewidth=2.0)
+                            linestyle=':', color=color[idx], linewidth=4.0)
             if len(val) > 2:
                 assert len(val) % 2 == 0
                 for cnt in range(2, len(val), 2):
@@ -196,7 +196,7 @@ def process(hw_platforms, apps, xkcd):
 
     # Set aspect
     axis.set_xlim([xmin, xmax])
-    axis.set_ylim([ymin, ymax])
+    axis.set_ylim([ymin, ymax*1.1])
     axis.legend(fontsize=fontsize_labels)
     fig.tight_layout()
     set_size(fig_dimension*fig_ratio,fig_dimension, ax=axis)

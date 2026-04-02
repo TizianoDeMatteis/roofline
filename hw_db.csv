@@ -1,4 +1,5 @@
-# name, performance, bandwidth, cost in $
+# name, performanceFP32, bandwidth, cost in $
+NVIDIA H100, 67000,3350, 80000
 NVIDIA A100,19500,1555,8000
 NVIDIA TitanX,6700,336,6000
 #Intel Xeon Gold 6140,2500,128,2500
